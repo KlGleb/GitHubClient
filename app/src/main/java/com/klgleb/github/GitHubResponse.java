@@ -38,11 +38,11 @@ public class GitHubResponse {
 
     public GitHubResponse(Request request) {
 
-       /* try {
-            //TimeUnit.SECONDS.sleep(5);
+        try {
+            TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }*/
+        }
 
 
         Response response = null;

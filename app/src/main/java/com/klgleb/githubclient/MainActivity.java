@@ -5,9 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.AsyncTaskLoader;
-import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -27,10 +24,9 @@ import org.json.JSONException;
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<GitHubResponse> {
+public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MyTag MainActivity";
-    public static final int LOADER_ID = 1;
     public static final String LOGIN_KEY = "login";
     public static final String PASS_KEY = "pass";
     public static final String PREFERENCES = "com.klgleb.githubclient";
@@ -45,8 +41,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        LoaderManager lm = getSupportLoaderManager();
-        lm.initLoader(LOADER_ID, null, this);
 
 
         mListView = (ListView) findViewById(R.id.listView);
@@ -97,12 +91,13 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     }
 
     private void updateList() {
-        getSupportLoaderManager().getLoader(LOADER_ID).forceLoad();
+        GitHubRepositoriesAsyncTask task = new GitHubRepositoriesAsyncTask(this);
+        task.execute();
     }
 
 
     public void onClick(View view) {
-
+        updateList();
 
     }
 
@@ -157,45 +152,55 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Void, GitHubResponse> {
 
-    //-----------------
-    //Loader override methods
-    //----------------
+        private Context mContext;
 
-    @Override
-    public Loader<GitHubResponse> onCreateLoader(int id, Bundle args) {
-        return new GetReposLoader(this);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<GitHubResponse> loader, GitHubResponse data) {
-
-/*
-
-        if (mProgressDialog != null) {
-            mProgressDialog.hide();
+        public GitHubRepositoriesAsyncTask(Context context) {
+            mContext = context;
         }
-*/
 
-        if (loader.getId() == LOADER_ID) {
-            switch (data.getStatus()) {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected GitHubResponse doInBackground(Void... voids) {
+
+            HashMap<String, String> params = new HashMap<>();
+            params.put("type", "all");
+            params.put("sort", "created");
+            params.put("direction", "desc");
+
+            GitHubRequest request = new GitHubRequest("user/repos", params);
+
+            return request.execute();
+
+        }
+
+        @Override
+        protected void onPostExecute(GitHubResponse response) {
+            super.onPostExecute(response);
+
+            switch (response.getStatus()) {
                 case GitHubResponse.BAD_REQUEST:
-                    Toast.makeText(this, getString(R.string.bad_request), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, getString(R.string.bad_request), Toast.LENGTH_LONG).show();
                     break;
                 case GitHubResponse.CONNECTION_PROBLEM:
-                    Toast.makeText(this, getString(R.string.connection_problem), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, getString(R.string.connection_problem), Toast.LENGTH_LONG).show();
                     break;
                 case GitHubResponse.JSON_PARSE_ERROR:
-                    Toast.makeText(this, getString(R.string.json_error), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, getString(R.string.json_error), Toast.LENGTH_LONG).show();
                     break;
                 case GitHubResponse.UNAUTHORIZED:
-                    Toast.makeText(this, getString(R.string.auth_error), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, getString(R.string.auth_error), Toast.LENGTH_LONG).show();
                     showLoginDialog();
 
                     break;
                 case GitHubResponse.COMPLETE:
 
-                    JSONArray jsonArr = data.getJSONArr();
+                    JSONArray jsonArr = response.getJSONArr();
 
                     try {
                         final GitHubRepos repos = new GitHubRepos(jsonArr);
@@ -208,8 +213,11 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                             protected Void doInBackground(Void... voids) {
                                 try {
                                     repos.cache(MainActivity.this);
+                                    Log.d(TAG, "Repositories cached -- count = " + String.valueOf(repos.size()));
                                 } catch (Throwable throwable) {
-                                    throwable.printStackTrace();
+                                    //throwable.printStackTrace();
+                                    Log.w(TAG, "Problem during caching: ");
+                                    Log.w(TAG, throwable);
                                 }
 
                                 return null;
@@ -221,42 +229,19 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                     } catch (JSONException e) {
                         e.printStackTrace();
 
-                        Toast.makeText(this, getString(R.string.json_error), Toast.LENGTH_LONG).show();
+                        Toast.makeText(mContext, getString(R.string.json_error), Toast.LENGTH_LONG).show();
                     }
 
                     break;
             }
-        }
 
-    }
-
-
-    @Override
-    public void onLoaderReset(Loader<GitHubResponse> loader) {
-
-    }
-
-
-    private static class GetReposLoader extends AsyncTaskLoader<GitHubResponse> {
-
-        public GetReposLoader(Context context) {
-            super(context);
-        }
-
-        @Override
-        public GitHubResponse loadInBackground() {
-
-            HashMap<String, String> params = new HashMap<>();
-            params.put("type", "all");
-            params.put("sort", "created");
-            params.put("direction", "desc");
-
-            GitHubRequest request = new GitHubRequest("user/repos", params);
-
-            return request.execute();
-
+            Log.d(TAG, "GitHubRepositoriesAsyncTask finished");
         }
     }
+
+
+
+
 
     private class LoadFromCacheAsyncTask extends AsyncTask<Void, Void, GitHubRepos> {
         private final Context mContext;
@@ -292,8 +277,5 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         }
 
 
-        @Override
-        protected void onProgressUpdate(Void... values) {
-        }
     }
 }
