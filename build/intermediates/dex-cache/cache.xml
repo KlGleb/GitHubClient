@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2">
+
+    <item
+        jar="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
+        jumboMode="false" revision="22.0.1" sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/classes-324c4dafbae18958b42da87b2fe257ed66f42021.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
+        jumboMode="false" revision="22.0.1" sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-f1a2ab13bc4a69e5876f5bbf04bae1a8b75ee054.jar" />
+    </item>
+    <item jar="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/libs/commons-codec-1.5.jar"
+        jumboMode="false" revision="22.0.1" sha1="cf993e250ff71804754ec2734a16f23c0be99f70">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/commons-codec-1.5-870e4b9432002535e33a52a2242934057814885d.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/Library/Android/sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.0/support-annotations-22.2.0.jar"
+        jumboMode="false" revision="22.0.1" sha1="66b42a1f3eb7676070b7ef7f14b603483aecbee1">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-5ff9b7aa8a02955a36f11d05c54a0c935bd55bba.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/exploded-aar/com.google.android.gms/play-services/6.5.87/jars/classes.jar"
+        jumboMode="false" revision="22.0.1" sha1="dd9247ea0fabe8ee479638c4b4a23e93752be256">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/classes-4a55a2b4856a11bc052c873e676335899ecf95a5.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.0/jars/classes.jar"
+        jumboMode="false" revision="22.0.1" sha1="73753982da6bde518f3a4c6b372749981d14d1a0">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/classes-321556a049447b0048ffbc57359ff20f196759f3.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp/okhttp/2.4.0/40340c0748190fe897baf7bffbc1b282734294e5/okhttp-2.4.0.jar"
+        jumboMode="false" revision="22.0.1" sha1="40340c0748190fe897baf7bffbc1b282734294e5">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/okhttp-2.4.0-943736ff4bdc68cd9a8ae3afb7d0e239bf4446a1.jar" />
+    </item>
+    <item
+        jar="/Users/klgleb/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.4.0/5b72bf48563ea8410e650de14aa33ff69a3e8c35/okio-1.4.0.jar"
+        jumboMode="false" revision="22.0.1" sha1="5b72bf48563ea8410e650de14aa33ff69a3e8c35">
+        <dex
+            dex="/Users/klgleb/AndroidStudioProjects/GitHubClient/app/build/intermediates/pre-dexed/debug/okio-1.4.0-8ac53411417fab8512afb60786ea204b4c9201d1.jar" />
+    </item>
+
+</items>

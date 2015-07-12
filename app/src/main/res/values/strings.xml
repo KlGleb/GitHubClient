@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">GithubClient</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="connection_problem">Проблема с подключением. Поверьте, пожалуйста, есть ли у Вас подключение к сети, и повторите попытку</string>
+    <string name="bad_request">Запрос к API,  вероятно, был сделан неправильно. Попробуйте еще раз чуть позже!</string>
+    <string name="json_error">Сервер вернул некорректный  ответ, который не может быть обработан. Попробуйте, пожалуйста, повторить попытку позже.</string>
+    <string name="title_activity_login">LoginActivity</string>
+    <string name="login_hint">Логин</string>
+    <string name="pass_hint">Пароль</string>
+    <string name="enter_github">Войти</string>
+    <string name="auth_error">Ошибка авторизации. Пожалуйста, введите корректные логин и пароль.</string>
+</resources>
