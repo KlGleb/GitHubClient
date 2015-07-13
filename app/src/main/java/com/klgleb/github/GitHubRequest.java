@@ -1,10 +1,10 @@
 package com.klgleb.github;
 
-import com.squareup.okhttp.FormEncodingBuilder;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
+import android.net.Uri;
+import android.util.Log;
 
-import org.apache.commons.codec.binary.Base64;
+import com.squareup.okhttp.Credentials;
+import com.squareup.okhttp.Request;
 
 import java.util.HashMap;
 
@@ -15,45 +15,49 @@ import java.util.HashMap;
  */
 public class GitHubRequest {
 
-
-    public static final String URL = "https://api.github.com/";
+    public static final String TAG = "MyTag GitHubRequest";
+    public static final String API_DOMAIN = "api.github.com";
     private final Request mRequest;
 
 
     public GitHubRequest(String method, HashMap<String, String> parametres) {
 
-        FormEncodingBuilder formBuilder = new FormEncodingBuilder();
-
-        for (String key : parametres.keySet()) {
-            formBuilder.add(key, parametres.get(key));
-        }
-
-        RequestBody formBody = formBuilder.build();
 
         String name = GitHub.getInstance().getUserLogin();
         String password = GitHub.getInstance().getUserPassword();
 
-        String authString = name + ":" + password;
-        byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
-        String authStringEnc = new String(authEncBytes);
+        String credential = Credentials.basic(name, password);
 
+
+        Uri.Builder builder = new Uri.Builder()
+                .scheme("https")
+                .authority(API_DOMAIN)
+                .path(method);
+
+        for (String key : parametres.keySet()) {
+            builder.appendQueryParameter(key, parametres.get(key));
+        }
+
+        Uri uri = builder.build();
+
+        Log.d(TAG, uri.toString());
 
         mRequest = new Request.Builder()
-                .url(GitHubRequest.URL + method)
+                .url(uri.toString())
                 .header("User-Agent", "OkHttp Headers.java")
                 .addHeader("Accept", "application/json; q=0.5")
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/vnd.github.v3+json")
-                .addHeader("Authorization", "Basic " + authStringEnc)
+                .addHeader("Authorization", credential)
                         //.post(formBody)
                 .build();
 
 
     }
 
-    public GitHubResponse execute() {
+    public GitHubResponse execute(GitHubResponse.ProgressListener progressListener) {
 
-        return new GitHubResponse(mRequest);
+        return new GitHubResponse(mRequest, progressListener);
 
     }
 }

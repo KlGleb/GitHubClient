@@ -1,16 +1,20 @@
 package com.klgleb.githubclient;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -34,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
     //    private ProgressDialog mProgressDialog;
     //private static ReposAdapter mAdapter;
     private ListView mListView;
+    private LocalBroadcastManager mBoardcastManager;
+    private BroadcastReceiver mReceiver;
+    private ProgressBar mProgressBar;
+    private BroadcastReceiver mReceiverError;
 
 
     @Override
@@ -41,9 +49,45 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-
         mListView = (ListView) findViewById(R.id.listView);
+        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
+
+        mProgressBar.setVisibility(View.INVISIBLE);
+
+        mBoardcastManager = LocalBroadcastManager.getInstance(this);
+
+
+        mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                loadFromCache();
+                Log.d(TAG, "onReceive and loading from SQLite.");
+
+                mProgressBar.setVisibility(View.INVISIBLE);
+            }
+        };
+
+        mBoardcastManager.registerReceiver(mReceiver,
+                new IntentFilter(GitHubRepositoriesAsyncTask.ACTION_ON_GET_REPOSITORIES));
+
+
+        mReceiverError = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                loadFromCache();
+                Log.d(TAG, "Caching error");
+
+                mProgressBar.setVisibility(View.INVISIBLE);
+
+                Toast.makeText(MainActivity.this, getString(R.string.caching_error), Toast.LENGTH_LONG).show();
+            }
+        };
+        mBoardcastManager.registerReceiver(mReceiverError,
+                new IntentFilter(GitHubRepositoriesAsyncTask.ACTION_ON_CACHING_ERROR));
+
+
+        //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
+
 
         if (!GitHub.getInstance().isLogin()) {
 
@@ -80,7 +124,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        mBoardcastManager.unregisterReceiver(mReceiver);
+        mBoardcastManager.unregisterReceiver(mReceiverError);
+    }
+
     private void loadFromCache() {
+        assert mProgressBar != null;
+
+
         LoadFromCacheAsyncTask task = new LoadFromCacheAsyncTask(this);
         task.execute();
     }
@@ -91,8 +146,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateList() {
-        GitHubRepositoriesAsyncTask task = new GitHubRepositoriesAsyncTask(this);
-        task.execute();
+
+        mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
+
+        mProgressBar.setVisibility(View.VISIBLE);
+        GitHubRepositoriesAsyncTask mTask = new GitHubRepositoriesAsyncTask(this);
+        mTask.execute();
     }
 
 
@@ -152,7 +211,12 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Void, GitHubResponse> {
+    private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Long, GitHubResponse> {
+
+        public static final String ACTION_ON_GET_REPOSITORIES = "com.klgleb.githubclient.ongetrep";
+        // public static final String ACTION_ON_PROGRESS = "com.klgleb.githubclient.onprogressrep";
+        private static final String ACTION_ON_CACHING_ERROR = "com.klgleb.githubclient.oncachingerror";
+
 
         private Context mContext;
 
@@ -175,8 +239,30 @@ public class MainActivity extends AppCompatActivity {
 
             GitHubRequest request = new GitHubRequest("user/repos", params);
 
-            return request.execute();
+            final GitHubResponse.ProgressListener progressListener = new GitHubResponse.ProgressListener() {
+                @Override
+                public void update(long bytesRead, long contentLength, boolean done) {
+                    /*System.out.println(bytesRead);
+                    System.out.println(contentLength);
+                    System.out.println(done);
+                    System.out.format("%d%% done\n", (100 * bytesRead) / contentLength);*/
 
+                    GitHubRepositoriesAsyncTask.this.publishProgress(bytesRead, contentLength);
+                }
+            };
+
+            return request.execute(progressListener);
+
+        }
+
+        @Override
+        protected void onProgressUpdate(Long... values) {
+//            Long contentLength = values[0];
+//            Long bytesRead = values[1];
+
+            // Log.d(TAG, String.format("This is progress! 3-)  Bytes read %s, bytes total %s",bytesRead, contentLength));
+
+            super.onProgressUpdate(values);
         }
 
         @Override
@@ -204,27 +290,40 @@ public class MainActivity extends AppCompatActivity {
 
                     try {
                         final GitHubRepos repos = new GitHubRepos(jsonArr);
-                        mListView.setAdapter(new ReposAdapter(repos));
+                        //mListView.setAdapter(new ReposAdapter(repos));
 
                         //caching data
-                        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+                        AsyncTask<GitHubRepos, Void, Void> task = new AsyncTask<GitHubRepos, Void, Void>() {
 
                             @Override
-                            protected Void doInBackground(Void... voids) {
+                            protected Void doInBackground(GitHubRepos... gitHubReposes) {
+                                GitHubRepos repose = gitHubReposes[0];
+
                                 try {
-                                    repos.cache(MainActivity.this);
+                                    repose.cache(MainActivity.this);
+                                    LocalBroadcastManager manager = LocalBroadcastManager.getInstance(mContext);
+
+                                    Intent intent = new Intent(ACTION_ON_GET_REPOSITORIES);
+                                    manager.sendBroadcast(intent);
+
                                     Log.d(TAG, "Repositories cached -- count = " + String.valueOf(repos.size()));
                                 } catch (Throwable throwable) {
                                     //throwable.printStackTrace();
                                     Log.w(TAG, "Problem during caching: ");
                                     Log.w(TAG, throwable);
+
+                                    LocalBroadcastManager manager = LocalBroadcastManager.getInstance(mContext);
+
+                                    Intent intent = new Intent(ACTION_ON_CACHING_ERROR);
+                                    manager.sendBroadcast(intent);
+
                                 }
 
                                 return null;
                             }
                         };
 
-                        task.execute();
+                        task.execute(repos);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -238,9 +337,6 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "GitHubRepositoriesAsyncTask finished");
         }
     }
-
-
-
 
 
     private class LoadFromCacheAsyncTask extends AsyncTask<Void, Void, GitHubRepos> {
@@ -267,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(GitHubRepos result) {
-            if (result != null && result.size() > 0 && mListView != null && mListView.getAdapter() == null) {
+            if (result != null && result.size() > 0 && mListView != null) {
 
                 Log.d(TAG, "Repositories got from SQLite: count of this is " + result.size());
 

@@ -2,9 +2,12 @@ package com.klgleb.github;
 
 import android.util.Log;
 
+import com.squareup.okhttp.Interceptor;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+import com.squareup.okhttp.ResponseBody;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -12,6 +15,12 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import okio.Buffer;
+import okio.BufferedSource;
+import okio.ForwardingSource;
+import okio.Okio;
+import okio.Source;
 
 /**
  * Class for processing the query and result.
@@ -36,19 +45,31 @@ public class GitHubResponse {
 
     private Object mJsonResult;
 
-    public GitHubResponse(Request request) {
+    public GitHubResponse(Request request, final ProgressListener progressListener) {
 
-        try {
+       /* try {
             TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
 
 
         Response response = null;
 
         OkHttpClient client = new OkHttpClient();
         client.setConnectTimeout(15, TimeUnit.SECONDS);
+
+
+        client.networkInterceptors().add(new Interceptor() {
+            @Override
+            public Response intercept(Chain chain) throws IOException {
+                Response originalResponse = chain.proceed(chain.request());
+                return originalResponse.newBuilder()
+                        .body(new ProgressResponseBody(originalResponse.body(), progressListener))
+                        .build();
+            }
+        });
+
 
         try {
             response = client.newCall(request).execute();
@@ -158,5 +179,55 @@ public class GitHubResponse {
 
     public JSONObject getJSONObj() {
         return (JSONObject) mJsonResult;
+    }
+
+
+    public interface ProgressListener {
+        void update(long bytesRead, long contentLength, boolean done);
+    }
+
+    private static class ProgressResponseBody extends ResponseBody {
+
+        private final ResponseBody responseBody;
+        private final ProgressListener progressListener;
+        private BufferedSource bufferedSource;
+
+        public ProgressResponseBody(ResponseBody responseBody, ProgressListener progressListener) {
+            this.responseBody = responseBody;
+            this.progressListener = progressListener;
+        }
+
+        @Override
+        public MediaType contentType() {
+            return responseBody.contentType();
+        }
+
+        @Override
+        public long contentLength() throws IOException {
+            return responseBody.contentLength();
+        }
+
+        @Override
+        public BufferedSource source() throws IOException {
+            if (bufferedSource == null) {
+                bufferedSource = Okio.buffer(source(responseBody.source()));
+            }
+            return bufferedSource;
+        }
+
+        private Source source(Source source) {
+            return new ForwardingSource(source) {
+                long totalBytesRead = 0L;
+
+                @Override
+                public long read(Buffer sink, long byteCount) throws IOException {
+                    long bytesRead = super.read(sink, byteCount);
+                    // read() returns the number of bytes read, or -1 if this source is exhausted.
+                    totalBytesRead += bytesRead != -1 ? bytesRead : 0;
+                    progressListener.update(totalBytesRead, responseBody.contentLength(), bytesRead == -1);
+                    return bytesRead;
+                }
+            };
+        }
     }
 }

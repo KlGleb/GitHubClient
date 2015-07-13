@@ -25,7 +25,7 @@ public class GitHubSQLiteHelper extends SQLiteOpenHelper {
     public static final String COLUMN_AVATAR_URL = "avatar_url";
     public static final String COLUMN_LOGIN = "login";
     private static final String DATABASE_NAME = "github.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
 
     public GitHubSQLiteHelper(Context context) {
@@ -53,7 +53,7 @@ public class GitHubSQLiteHelper extends SQLiteOpenHelper {
                 "Upgrading database from version " + oldVersion + " to "
                         + newVersion + ", which will destroy all old data");
 
-        if (oldVersion == 1) {
+        if (oldVersion == 1 || oldVersion == 2) {
             db.execSQL("DROP TABLE IF EXISTS " + TABLE_OWNERS);
             db.execSQL("DROP TABLE IF EXISTS " + TABLE_REPOSITORIES);
             onCreate(db);

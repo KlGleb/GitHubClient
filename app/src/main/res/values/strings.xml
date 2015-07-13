@@ -11,4 +11,5 @@
     <string name="pass_hint">Пароль</string>
     <string name="enter_github">Войти</string>
     <string name="auth_error">Ошибка авторизации. Пожалуйста, введите корректные логин и пароль.</string>
+    <string name="caching_error">Ответ от сервера не мог быть правильно обработан. Повторите, пожалуйста, попытку позднее.</string>
 </resources>

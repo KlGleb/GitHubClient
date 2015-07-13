@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,6 +19,8 @@ import java.util.ArrayList;
  * Created by klgleb on 11.07.15.
  */
 public class GitHubRepos extends ArrayList<GitHubRepo> {
+
+    public static final String TAG = "GitHubRepos MyTag";
 
     public GitHubRepos() {
         super();
@@ -43,6 +46,8 @@ public class GitHubRepos extends ArrayList<GitHubRepo> {
      * @param context a context that need to working  SQLite.
      */
     public GitHubRepos(Context context) throws Throwable {
+
+        Log.d(TAG, "Start loading from cache");
 
         GitHubSQLiteHelper helper = new GitHubSQLiteHelper(context);
 
@@ -74,11 +79,15 @@ public class GitHubRepos extends ArrayList<GitHubRepo> {
 
 
             } while (c.moveToNext());
+
+            Log.d(TAG, "The end of loading from cache. Count =  " + this.size());
         }
 
     }
 
     public void cache(Context context) throws Throwable {
+
+
         GitHubSQLiteHelper helper = new GitHubSQLiteHelper(context);
 
         SQLiteDatabase db = helper.getWritableDatabase();
