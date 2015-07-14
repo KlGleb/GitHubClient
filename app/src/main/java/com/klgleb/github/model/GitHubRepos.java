@@ -7,9 +7,12 @@ import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import com.klgleb.github.GitHub;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 /**
@@ -87,6 +90,9 @@ public class GitHubRepos extends ArrayList<GitHubRepo> {
 
     public void cache(Context context) throws Throwable {
 
+        Log.d(TAG, "==============================================================");
+        Log.d(TAG, "before delete: ");
+        viewCache(context);
 
         GitHubSQLiteHelper helper = new GitHubSQLiteHelper(context);
 
@@ -95,6 +101,14 @@ public class GitHubRepos extends ArrayList<GitHubRepo> {
 
         db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_OWNERS);
         db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_REPOSITORIES);
+
+
+        Log.d(TAG, "After  delete: ");
+        viewCache(context);
+
+
+
+
 
         for (int i = 0; i < this.size(); i++) {
             GitHubRepo rep = this.get(i);
@@ -113,8 +127,39 @@ public class GitHubRepos extends ArrayList<GitHubRepo> {
             }
         }
 
+        Log.d(TAG, "After  insert: ");
+        viewCache(context);
+
+
+        Log.d(TAG, "==============================================================");
         db.close();
 
+    }
+
+    private void viewCache(Context context) {
+        GitHubSQLiteHelper helper = new GitHubSQLiteHelper(context);
+
+        SQLiteDatabase db = helper.getWritableDatabase();
+
+        Cursor c = db.rawQuery(
+                MessageFormat.format("SELECT * FROM {0} ",
+                        GitHubSQLiteHelper.TABLE_REPOSITORIES
+                ), null
+        );
+
+        if (c.moveToFirst()) {
+            do {
+
+                GitHubRepo repo = new GitHubRepo(c, GitHub.getInstance().getOwner());
+
+                Log.d(TAG, repo.getName() + " ( " + repo.getDescription() + " )");
+
+
+            } while (c.moveToNext());
+
+        }
+
+        db.close();
     }
 
 }

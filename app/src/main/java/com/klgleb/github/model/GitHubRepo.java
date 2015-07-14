@@ -20,11 +20,13 @@ public class GitHubRepo {
     private final int mForksCount;
     private final int mWatchersCount;
     private final int mRepId;
+    private final String mFullName;
 
     public GitHubRepo(JSONObject object) throws JSONException {
 
         mOwner = new GitHubOwner((JSONObject) object.get("owner"));
         mName = object.getString("name");
+        mFullName = object.getString("full_name");
         mDescription = object.getString("description");
         mForksCount = object.getInt("forks_count");
         mWatchersCount = object.getInt("watchers_count");
@@ -39,6 +41,7 @@ public class GitHubRepo {
         mWatchersCount = cursor.getInt(cursor.getColumnIndexOrThrow(GitHubSQLiteHelper.COLUMN_WATCHERS_COUNT));
         mRepId = cursor.getInt(cursor.getColumnIndexOrThrow(GitHubSQLiteHelper.COLUMN_WATCHERS_COUNT));
         mName = cursor.getString(cursor.getColumnIndexOrThrow(GitHubSQLiteHelper.COLUMN_NAME));
+        mFullName = cursor.getString(cursor.getColumnIndexOrThrow(GitHubSQLiteHelper.COLUMN_FULL_NAME));
         mDescription = cursor.getString(cursor.getColumnIndexOrThrow(GitHubSQLiteHelper.COLUMN_DESCRIPTION));
     }
 
@@ -66,6 +69,10 @@ public class GitHubRepo {
         return mRepId;
     }
 
+    public String getFullName() {
+        return mFullName;
+    }
+
     public ContentValues getContentValues() {
         ContentValues values = new ContentValues();
 
@@ -75,6 +82,7 @@ public class GitHubRepo {
         values.put(GitHubSQLiteHelper.COLUMN_FORKS_COUNT, getForksCount());
         values.put(GitHubSQLiteHelper.COLUMN_WATCHERS_COUNT, getWatchersCount());
         values.put(GitHubSQLiteHelper.COLUMN_OWNER_ID, getOwner().getOwnerId());
+        values.put(GitHubSQLiteHelper.COLUMN_FULL_NAME, getFullName());
 
         return values;
     }

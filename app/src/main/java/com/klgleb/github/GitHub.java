@@ -1,5 +1,7 @@
 package com.klgleb.github;
 
+import com.klgleb.github.model.GitHubOwner;
+
 /**
  * Singleton that stores the authorization data.
  * <p/>
@@ -11,6 +13,8 @@ public class GitHub {
     private String mUserLogin;
     private String mUserPassword;
     private boolean mIsInit = false;
+
+    private GitHubOwner mOwner;
 
     private GitHub() {
     }
@@ -38,4 +42,11 @@ public class GitHub {
         return mIsInit;
     }
 
+    public GitHubOwner getOwner() {
+        return mOwner;
+    }
+
+    public void setOwner(GitHubOwner mOwner) {
+        this.mOwner = mOwner;
+    }
 }

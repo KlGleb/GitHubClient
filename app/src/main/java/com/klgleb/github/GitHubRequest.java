@@ -3,6 +3,7 @@ package com.klgleb.github;
 import android.net.Uri;
 import android.util.Log;
 
+import com.squareup.okhttp.CacheControl;
 import com.squareup.okhttp.Credentials;
 import com.squareup.okhttp.Request;
 
@@ -34,8 +35,10 @@ public class GitHubRequest {
                 .authority(API_DOMAIN)
                 .path(method);
 
-        for (String key : parametres.keySet()) {
-            builder.appendQueryParameter(key, parametres.get(key));
+        if (parametres != null) {
+            for (String key : parametres.keySet()) {
+                builder.appendQueryParameter(key, parametres.get(key));
+            }
         }
 
         Uri uri = builder.build();
@@ -43,6 +46,7 @@ public class GitHubRequest {
         Log.d(TAG, uri.toString());
 
         mRequest = new Request.Builder()
+                .cacheControl(new CacheControl.Builder().noCache().build())
                 .url(uri.toString())
                 .header("User-Agent", "OkHttp Headers.java")
                 .addHeader("Accept", "application/json; q=0.5")
@@ -59,5 +63,9 @@ public class GitHubRequest {
 
         return new GitHubResponse(mRequest, progressListener);
 
+    }
+
+    public GitHubResponse execute() {
+        return execute(null);
     }
 }

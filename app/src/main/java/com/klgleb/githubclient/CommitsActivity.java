@@ -1,22 +1,16 @@
 package com.klgleb.githubclient;
 
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -24,10 +18,7 @@ import android.widget.Toast;
 import com.klgleb.github.GitHub;
 import com.klgleb.github.GitHubRequest;
 import com.klgleb.github.GitHubResponse;
-import com.klgleb.github.model.GitHubOwner;
-import com.klgleb.github.model.GitHubRepo;
-import com.klgleb.github.model.GitHubRepos;
-import com.klgleb.github.model.GitHubSQLiteHelper;
+import com.klgleb.github.model.GitHubCommits;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,13 +26,13 @@ import org.json.JSONException;
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity {
+public class CommitsActivity extends AppCompatActivity {
 
-    public static final String TAG = "MyTag MainActivity";
+    public static final String TAG = "MyTag CommitsActivity";
     public static final String LOGIN_KEY = "login";
     public static final String PASS_KEY = "pass";
     public static final String PREFERENCES = "com.klgleb.githubclient";
-    private static boolean sTaskLoadint = false;
+    private static boolean sTaskLoading = false;
     //    private ProgressDialog mProgressDialog;
     //private static ReposAdapter mAdapter;
     private ListView mListView;
@@ -49,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiver;
     private ProgressBar mProgressBar;
     private BroadcastReceiver mReceiverError;
+    private String mRepoName;
+    private String mRepoOwner;
     private BroadcastReceiver mReceiverTaskComplete;
 
     @Override
@@ -56,12 +49,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        Intent intent = getIntent();
+
+        this.mRepoName = intent.getStringExtra("repo");
+        this.mRepoOwner = intent.getStringExtra("owner");
+
         mListView = (ListView) findViewById(R.id.listView);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
 
         mProgressBar.setVisibility(View.INVISIBLE);
 
-        if (sTaskLoadint) {
+
+        if (sTaskLoading) {
             mProgressBar.setVisibility(View.VISIBLE);
         }
 
@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         };
 
         mBoardcastManager.registerReceiver(mReceiver,
-                new IntentFilter(GitHubRepositoriesAsyncTask.ACTION_ON_GET_REPOSITORIES));
+                new IntentFilter(GitHubCommitsAsyncTask.ACTION_ON_GET_COMMITS));
 
 
         mReceiverError = new BroadcastReceiver() {
@@ -90,13 +90,11 @@ public class MainActivity extends AppCompatActivity {
 
                 mProgressBar.setVisibility(View.INVISIBLE);
 
-                Toast.makeText(MainActivity.this, getString(R.string.caching_error), Toast.LENGTH_LONG).show();
+                Toast.makeText(CommitsActivity.this, getString(R.string.caching_error), Toast.LENGTH_LONG).show();
             }
         };
-
         mBoardcastManager.registerReceiver(mReceiverError,
-                new IntentFilter(GitHubRepositoriesAsyncTask.ACTION_ON_CACHING_ERROR));
-
+                new IntentFilter(GitHubCommitsAsyncTask.ACTION_ON_CACHING_ERROR_COMMITS));
 
         mReceiverTaskComplete = new BroadcastReceiver() {
             @Override
@@ -107,40 +105,15 @@ public class MainActivity extends AppCompatActivity {
 
 
         mBoardcastManager.registerReceiver(mReceiverTaskComplete,
-                new IntentFilter(GitHubRepositoriesAsyncTask.ACTION_TASK_COMPLETE));
+                new IntentFilter(GitHubCommitsAsyncTask.ACTION_TASK_COMPLETE));
 
 
         //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
 
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+        loadFromCache();
 
-               /* if (GitHub.getInstance().getOwner() != null) {
-
-                    GitHubRepo repo = (GitHubRepo) mListView.getAdapter().getItem(position);
-
-                    Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
-
-                    intent.putExtra("repo", repo.getName());
-                    intent.putExtra("owner", GitHub.getInstance().getOwner().getLogin());
-
-                    startActivity(intent);
-                }*/
-
-                GitHubRepo repo = (GitHubRepo) mListView.getAdapter().getItem(position);
-
-                Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
-
-                intent.putExtra("repo", repo.getName());
-                intent.putExtra("owner", repo.getOwner().getLogin());
-
-                startActivity(intent);
-            }
-        });
-
-
+        /*
         if (!GitHub.getInstance().isLogin()) {
 
             SharedPreferences prefs = this.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
@@ -163,14 +136,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-        } else {
+        } else if (mStartFlag) {
+            mStartFlag = false;
+            this.updateList();
 
-            if (mListView.getAdapter() == null) {
-                loadFromCache();
-            }
-
-
-        }
+        } else if (mListView.getAdapter() == null) {
+            loadFromCache();
+        }*/
 
         Log.d(TAG, "onCreate");
 
@@ -201,9 +173,14 @@ public class MainActivity extends AppCompatActivity {
     private void updateList() {
 
         //mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
+        if (mRepoOwner == null || mRepoName == null) {
+            Log.w(TAG, "Owner and repo are null");
+            super.onBackPressed();
+            return;
+        }
 
         mProgressBar.setVisibility(View.VISIBLE);
-        GitHubRepositoriesAsyncTask mTask = new GitHubRepositoriesAsyncTask(this);
+        GitHubCommitsAsyncTask mTask = new GitHubCommitsAsyncTask(this, mRepoOwner, mRepoName);
         mTask.execute();
     }
 
@@ -241,41 +218,27 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private class GitHubCommitsAsyncTask extends AsyncTask<Void, Long, GitHubResponse> {
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Long, GitHubResponse> {
-
-        public static final String ACTION_ON_GET_REPOSITORIES = "com.klgleb.githubclient.ongetrep";
+        public static final String ACTION_ON_GET_COMMITS = "com.klgleb.githubclient.ongecommits";
         // public static final String ACTION_ON_PROGRESS = "com.klgleb.githubclient.onprogressrep";
-        private static final String ACTION_ON_CACHING_ERROR = "com.klgleb.githubclient.oncachingerror";
-        private static final String ACTION_TASK_COMPLETE = "com.klgleb.githubclient.taskcomplete";
+        private static final String ACTION_ON_CACHING_ERROR_COMMITS = "com.klgleb.githubclient.oncachingerrorcommits";
+        private static final String ACTION_TASK_COMPLETE = "com.klgleb.githubclient.ontaskcompletecommits";
+
+        private final String mPath;
+        private final String mOwner;
+        private final String mRepo;
 
 
         private Context mContext;
 
-        public GitHubRepositoriesAsyncTask(Context context) {
+        public GitHubCommitsAsyncTask(Context context, String owner, String repo) {
+            mPath = String.format("repos/%s/%s/commits", owner, repo);
             mContext = context;
+
+            mOwner = owner;
+            mRepo = repo;
+
         }
 
         @Override
@@ -285,57 +248,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected GitHubResponse doInBackground(Void... voids) {
-            sTaskLoadint = true;
-            //Надо получить текущего пользователя, если его у нас еще нет.
-
-            if (GitHub.getInstance().getOwner() == null) {
-
-                Log.d(TAG, "Start get current user");
-
-                GitHubRequest request2 = new GitHubRequest("user", null);
-                GitHubResponse resp = request2.execute();
-
-                if (resp.getStatus() == GitHubResponse.COMPLETE) {
-                    try {
-                        GitHubOwner owner = new GitHubOwner(resp.getJSONObj());
-                        GitHub.getInstance().setOwner(owner);
-
-
-                    } catch (JSONException e) {
-                        return resp;//Тоже пробросим. Там внизу json тоже не обработается и появится ошибка, что нам и надо.
-                    }
-
-                    Log.d(TAG, "Start cache current user");
-
-                    //Здесь же закешируем.
-                    try {
-                        GitHubSQLiteHelper helper = new GitHubSQLiteHelper(mContext);
-                        SQLiteDatabase db = helper.getWritableDatabase();
-                        db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_CURRENT_OWNER);
-                        ContentValues values = new ContentValues();
-                        values.put(GitHubSQLiteHelper.COLUMN_AVATAR_URL, GitHub.getInstance().getOwner().getAvatarUrl());
-                        values.put(GitHubSQLiteHelper.COLUMN_LOGIN, GitHub.getInstance().getOwner().getLogin());
-                        db.insert(GitHubSQLiteHelper.TABLE_CURRENT_OWNER, null, values);
-                        db.close();
-                    } catch (Throwable throwable) {
-                        //Ошибка? Да и фиг с ней.
-                        //do nothing
-                    }
-
-
-                } else {
-                    //Пробрасываем ошибку дальше.
-                    return resp;
-                }
-            }
-
+            sTaskLoading = true;
 
             HashMap<String, String> params = new HashMap<>();
-            params.put("type", "all");
-            params.put("sort", "created");
-            params.put("direction", "desc");
 
-            GitHubRequest request = new GitHubRequest("user/repos", params);
+            GitHubRequest request = new GitHubRequest(mPath, params);
 
             final GitHubResponse.ProgressListener progressListener = new GitHubResponse.ProgressListener() {
                 @Override
@@ -345,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println(done);
                     System.out.format("%d%% done\n", (100 * bytesRead) / contentLength);*/
 
-                    GitHubRepositoriesAsyncTask.this.publishProgress(bytesRead, contentLength);
+                    GitHubCommitsAsyncTask.this.publishProgress(bytesRead, contentLength);
                 }
             };
 
@@ -366,11 +283,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(GitHubResponse response) {
             super.onPostExecute(response);
-            sTaskLoadint = false;
+            sTaskLoading = false;
 
             switch (response.getStatus()) {
                 case GitHubResponse.BAD_REQUEST:
-                    Toast.makeText(mContext, getString(R.string.bad_request), Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, getString(R.string.commit_dont_have), Toast.LENGTH_LONG).show();
+
+                    if (mListView != null) {
+                        CommitsActivity.super.onBackPressed();
+                    }
+
+
                     break;
                 case GitHubResponse.CONNECTION_PROBLEM:
                     Toast.makeText(mContext, getString(R.string.connection_problem), Toast.LENGTH_LONG).show();
@@ -388,32 +311,34 @@ public class MainActivity extends AppCompatActivity {
                     JSONArray jsonArr = response.getJSONArr();
 
                     try {
-                        final GitHubRepos repos = new GitHubRepos(jsonArr);
+                        final GitHubCommits commit = new GitHubCommits(jsonArr, mOwner, mRepoName);
                         //mListView.setAdapter(new ReposAdapter(repos));
 
                         //caching data
-                        AsyncTask<GitHubRepos, Void, Void> task = new AsyncTask<GitHubRepos, Void, Void>() {
+                        AsyncTask<GitHubCommits, Void, Void> task = new AsyncTask<GitHubCommits, Void, Void>() {
 
                             @Override
-                            protected Void doInBackground(GitHubRepos... gitHubReposes) {
-                                GitHubRepos repose = gitHubReposes[0];
+                            protected Void doInBackground(GitHubCommits... gitHubReposes) {
+
+                                GitHubCommits commits = gitHubReposes[0];
 
                                 try {
-                                    repose.cache(MainActivity.this);
+
+                                    commits.cache(CommitsActivity.this);
                                     LocalBroadcastManager manager = LocalBroadcastManager.getInstance(mContext);
 
-                                    Intent intent = new Intent(ACTION_ON_GET_REPOSITORIES);
+                                    Intent intent = new Intent(ACTION_ON_GET_COMMITS);
                                     manager.sendBroadcast(intent);
 
-                                    Log.d(TAG, "Repositories cached -- count = " + String.valueOf(repos.size()));
+                                    Log.d(TAG, "Commits cached -- count = " + String.valueOf(commit.size()));
                                 } catch (Throwable throwable) {
                                     //throwable.printStackTrace();
-                                    Log.w(TAG, "Problem during caching: ");
+                                    Log.w(TAG, "Problem during caching commits: ");
                                     Log.w(TAG, throwable);
 
                                     LocalBroadcastManager manager = LocalBroadcastManager.getInstance(mContext);
 
-                                    Intent intent = new Intent(ACTION_ON_CACHING_ERROR);
+                                    Intent intent = new Intent(ACTION_ON_CACHING_ERROR_COMMITS);
                                     manager.sendBroadcast(intent);
 
                                 }
@@ -422,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         };
 
-                        task.execute(repos);
+                        task.execute(commit);
 
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -439,13 +364,12 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(ACTION_TASK_COMPLETE);
             manager.sendBroadcast(intent);
 
-
-            Log.d(TAG, "GitHubRepositoriesAsyncTask finished");
+            Log.d(TAG, "GitHubCommitsAsyncTask finished");
         }
     }
 
 
-    private class LoadFromCacheAsyncTask extends AsyncTask<Void, Void, GitHubRepos> {
+    private class LoadFromCacheAsyncTask extends AsyncTask<Void, Void, GitHubCommits> {
         private final Context mContext;
 
         public LoadFromCacheAsyncTask(Context mContext) {
@@ -453,44 +377,30 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected GitHubRepos doInBackground(Void... params) {
+        protected GitHubCommits doInBackground(Void... params) {
 
             try {
 
-                //Сначала загрузим из кэша текущего пользователя
-                Log.d(TAG, "Start get user from cache");
-
-                GitHubSQLiteHelper helper = new GitHubSQLiteHelper(mContext);
-                SQLiteDatabase db = helper.getWritableDatabase();
-
-                Cursor cursor = db.rawQuery("SELECT * FROM " + GitHubSQLiteHelper.TABLE_CURRENT_OWNER, null);
-
-                if (cursor.moveToFirst()) {
-                    GitHubOwner owner = new GitHubOwner(cursor);
-                    GitHub.getInstance().setOwner(owner);
-                    Log.d(TAG, String.format("User got from cache: %s", owner.getLogin()));
-                }
-
-
-                //Затем загружаем репозитории
-                return new GitHubRepos(this.mContext);
+                return new GitHubCommits(this.mContext, mRepoOwner, mRepoName);
 
             } catch (Throwable throwable) {
                 Log.w(TAG, throwable);
-                return new GitHubRepos();
+                return new GitHubCommits(mRepoOwner, mRepoName);
             }
 
 
         }
 
         @Override
-        protected void onPostExecute(GitHubRepos result) {
+        protected void onPostExecute(GitHubCommits result) {
             if (result != null && result.size() > 0 && mListView != null) {
 
-                Log.d(TAG, "Repositories got from SQLite: count of this is " + result.size());
+                Log.d(TAG, "Commits are got from SQLite: count of this is " + result.size());
 
-                mListView.setAdapter(new ReposAdapter(result));
+                mListView.setAdapter(new CommitsAdapter(result));
 
+            } else {
+                updateList();
             }
         }
 
