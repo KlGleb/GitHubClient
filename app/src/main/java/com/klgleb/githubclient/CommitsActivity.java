@@ -33,6 +33,7 @@ public class CommitsActivity extends AppCompatActivity {
     public static final String PASS_KEY = "pass";
     public static final String PREFERENCES = "com.klgleb.githubclient";
     private static boolean sTaskLoading = false;
+    private static boolean mFlag = true;
     //    private ProgressDialog mProgressDialog;
     //private static ReposAdapter mAdapter;
     private ListView mListView;
@@ -400,7 +401,11 @@ public class CommitsActivity extends AppCompatActivity {
                 mListView.setAdapter(new CommitsAdapter(result));
 
             } else {
-                updateList();
+                if (mFlag) {
+                    updateList();
+                    mFlag = false; // для предотвращения зацикливания, когда 0 коммитов
+                }
+
             }
         }
 

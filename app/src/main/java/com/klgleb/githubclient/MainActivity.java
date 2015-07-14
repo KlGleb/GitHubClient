@@ -257,11 +257,43 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_logout) {
+            logout();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    private void logout() {
+        AsyncTask<Context, Void, Void> task = new AsyncTask<Context, Void, Void>() {
+
+
+            @Override
+            protected Void doInBackground(Context... contexts) {
+
+                GitHubSQLiteHelper helper = new GitHubSQLiteHelper(contexts[0]);
+                SQLiteDatabase db = helper.getWritableDatabase();
+                db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_OWNERS);
+                db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_REPOSITORIES);
+                db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_COMMITS);
+                db.execSQL("DELETE FROM " + GitHubSQLiteHelper.TABLE_CURRENT_OWNER);
+
+                return null;
+            }
+
+        };
+        task.execute(this);
+
+
+        SharedPreferences prefs = this.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+        prefs.edit().putString(LOGIN_KEY, "")
+                .putString(PASS_KEY, "").apply();
+
+        GitHub.getInstance().logout();
+
+        showLoginDialog();
     }
 
     private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Long, GitHubResponse> {

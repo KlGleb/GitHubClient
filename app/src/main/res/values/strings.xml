@@ -3,6 +3,7 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="action_logout">Выйти из профиля</string>
     <string name="connection_problem">Проблема с подключением. Поверьте, пожалуйста, есть ли у Вас подключение к сети, и повторите попытку</string>
     <string name="bad_request">Запрос к API,  вероятно, был сделан неправильно. Попробуйте еще раз чуть позже!</string>
     <string name="json_error">Сервер вернул некорректный  ответ, который не может быть обработан. Попробуйте, пожалуйста, повторить попытку позже.</string>

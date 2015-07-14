@@ -49,4 +49,11 @@ public class GitHub {
     public void setOwner(GitHubOwner mOwner) {
         this.mOwner = mOwner;
     }
+
+    public void logout() {
+        mUserLogin = null;
+        mUserPassword = null;
+        mOwner = null;
+        mIsInit = false;
+    }
 }
