@@ -12,9 +12,11 @@ public class GitHub {
 
     private String mUserLogin;
     private String mUserPassword;
+    private String mTwoFaKey;
     private boolean mIsInit = false;
 
     private GitHubOwner mOwner;
+    private String mToken;
 
     private GitHub() {
     }
@@ -50,10 +52,26 @@ public class GitHub {
         this.mOwner = mOwner;
     }
 
+    public String getTwoFaKey() {
+        return mTwoFaKey;
+    }
+
     public void logout() {
         mUserLogin = null;
         mUserPassword = null;
         mOwner = null;
         mIsInit = false;
+    }
+
+    public void setTwoFAKey(String text) {
+        mTwoFaKey = text;
+    }
+
+    public String getToken() {
+        return mToken;
+    }
+
+    public void setToken(String s) {
+        mToken = s;
     }
 }

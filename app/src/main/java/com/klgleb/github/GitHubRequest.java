@@ -21,11 +21,12 @@ public class GitHubRequest {
     private final Request mRequest;
 
 
-    public GitHubRequest(String method, HashMap<String, String> parametres) {
+    public GitHubRequest(String method, HashMap<String, String> parametres, String post) {
 
 
         String name = GitHub.getInstance().getUserLogin();
         String password = GitHub.getInstance().getUserPassword();
+        String fakey = GitHub.getInstance().getTwoFaKey();
 
         String credential = Credentials.basic(name, password);
 
@@ -45,19 +46,25 @@ public class GitHubRequest {
 
         Log.d(TAG, uri.toString());
 
-        mRequest = new Request.Builder()
+        Request.Builder builder2 = new Request.Builder()
                 .cacheControl(new CacheControl.Builder().noCache().build())
                 .url(uri.toString())
                 .header("User-Agent", "OkHttp Headers.java")
                 .addHeader("Accept", "application/json; q=0.5")
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/vnd.github.v3+json")
-                .addHeader("Authorization", credential)
+                .addHeader("Authorization", credential);
+
+        if (!fakey.equals("")) {
+            builder2.addHeader("X-GitHub-OTP", fakey);
+        }
+
                         //.post(formBody)
-                .build();
+        mRequest = builder2.build();
 
 
     }
+
 
     public GitHubResponse execute(GitHubResponse.ProgressListener progressListener) {
 

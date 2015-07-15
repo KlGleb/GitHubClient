@@ -2,6 +2,7 @@ package com.klgleb.github;
 
 import android.util.Log;
 
+import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
@@ -37,6 +38,7 @@ public class GitHubResponse {
     public static final int BAD_REQUEST = 2;
     public static final int CONNECTION_PROBLEM = 3;
     public static final int JSON_PARSE_ERROR = 5;
+    public static final int TWO_FACTOR_AUTH = 6;
 
 
     private String mErrorMessage;
@@ -99,7 +101,17 @@ public class GitHubResponse {
                 mStatus = BAD_REQUEST;
                 break;
             case 401:
-                mStatus = UNAUTHORIZED;
+                Headers headers = response.headers();
+                Log.d(TAG, "2fa? ==============================");
+                Log.d(TAG, headers.toString());
+
+                if (response.header("X-GitHub-OTP", "").contains("required")) {
+
+                    mStatus = TWO_FACTOR_AUTH;
+                } else {
+                    mStatus = UNAUTHORIZED;
+                }
+
                 break;
             case 200:
                 mStatus = COMPLETE;

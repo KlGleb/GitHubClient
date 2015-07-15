@@ -188,6 +188,7 @@ public class CommitsActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (data == null) {
+            showLoginDialog();
             return;
         }
 
@@ -246,7 +247,7 @@ public class CommitsActivity extends AppCompatActivity {
 
             HashMap<String, String> params = new HashMap<>();
 
-            GitHubRequest request = new GitHubRequest(mPath, params);
+            GitHubRequest request = new GitHubRequest(mPath, params, null);
 
             final GitHubResponse.ProgressListener progressListener = new GitHubResponse.ProgressListener() {
                 @Override
@@ -296,6 +297,7 @@ public class CommitsActivity extends AppCompatActivity {
                     Toast.makeText(mContext, getString(R.string.json_error), Toast.LENGTH_LONG).show();
                     break;
                 case GitHubResponse.UNAUTHORIZED:
+                case GitHubResponse.TWO_FACTOR_AUTH: //TODO:двухфакторная авторизация не реализована
                     Toast.makeText(mContext, getString(R.string.auth_error), Toast.LENGTH_LONG).show();
                     showLoginDialog();
 

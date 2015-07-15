@@ -1,8 +1,9 @@
 package com.klgleb.githubclient;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MyTag MainActivity";
     public static final String LOGIN_KEY = "login";
     public static final String PASS_KEY = "pass";
+    public static final String TWO_FA_KEY = "twofa";
     public static final String PREFERENCES = "com.klgleb.githubclient";
     private static boolean sTaskLoading = false;
     //    private ProgressDialog mProgressDialog;
@@ -53,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiverError;
     private BroadcastReceiver mReceiverTaskComplete;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private String mText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
         //mSwipeRefreshLayout.setColorSchemeResources(Color.YELLOW, Color.BLUE, Color.GREEN);
 
         mBoardcastManager = LocalBroadcastManager.getInstance(this);
-
 
 
         mReceiver = new BroadcastReceiver() {
@@ -159,12 +161,16 @@ public class MainActivity extends AppCompatActivity {
 
             String userLogin = prefs.getString(LOGIN_KEY, "");
             String userPass = prefs.getString(PASS_KEY, "");
+            String twoKey = prefs.getString(TWO_FA_KEY, "");
 
             assert userLogin != null;
             assert userPass != null;
+            assert twoKey != null;
 
             if (!userLogin.equals("") && !userPass.equals("")) {
                 GitHub.getInstance().init(userLogin, userPass);
+                GitHub.getInstance().setTwoFAKey(twoKey);
+
 
                 loadFromCache();
 
@@ -251,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (data == null) {
+            showLoginDialog();
             return;
         }
 
@@ -323,11 +330,51 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences prefs = this.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
         prefs.edit().putString(LOGIN_KEY, "")
-                .putString(PASS_KEY, "").apply();
+                .putString(TWO_FA_KEY, "")
+                .putString(PASS_KEY, "")
+                .apply();
 
         GitHub.getInstance().logout();
-
+        mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
         showLoginDialog();
+    }
+
+    private void twoFactorAuth() {
+
+        //TODO:реализовать двухфакторную авторизацию
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Двухфакторная авторизация не доделана");
+       /* builder.setTitle(getString(R.string.two_fa_title));
+
+        final EditText input = new EditText(this);
+
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+         builder.setView(input);
+
+        builder.setPositiveButton(getString(R.string.ok_msg), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String text = input.getText().toString();
+
+                SharedPreferences prefs = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+
+                prefs.edit().putString(TWO_FA_KEY, text).apply();
+
+
+                GitHub.getInstance().setTwoFAKey(text);
+                updateList();
+//                TWO_FA_KEY
+            }
+        });*/
+
+        builder.setNegativeButton(getString(R.string.cancel_msg), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
     }
 
     private class GitHubRepositoriesAsyncTask extends AsyncTask<Void, Long, GitHubResponse> {
@@ -353,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
         protected GitHubResponse doInBackground(Void... voids) {
             sTaskLoading = true;
             //Надо получить текущего пользователя, если его у нас еще нет.
-
+/*
             if (GitHub.getInstance().getOwner() == null) {
 
                 Log.d(TAG, "Start get current user");
@@ -393,7 +440,8 @@ public class MainActivity extends AppCompatActivity {
                     //Пробрасываем ошибку дальше.
                     return resp;
                 }
-            }
+            }*/
+
 
 
             HashMap<String, String> params = new HashMap<>();
@@ -401,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
             params.put("sort", "created");
             params.put("direction", "desc");
 
-            GitHubRequest request = new GitHubRequest("user/repos", params);
+            GitHubRequest request = new GitHubRequest("user/repos", params, null);
 
             final GitHubResponse.ProgressListener progressListener = new GitHubResponse.ProgressListener() {
                 @Override
@@ -443,6 +491,9 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case GitHubResponse.JSON_PARSE_ERROR:
                     Toast.makeText(mContext, getString(R.string.json_error), Toast.LENGTH_LONG).show();
+                    break;
+                case GitHubResponse.TWO_FACTOR_AUTH:
+                    twoFactorAuth();
                     break;
                 case GitHubResponse.UNAUTHORIZED:
                     Toast.makeText(mContext, getString(R.string.auth_error), Toast.LENGTH_LONG).show();

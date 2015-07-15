@@ -9,16 +9,6 @@
     tools:context="com.klgleb.githubclient.LoginActivity">
 
     <EditText
-        android:id="@+id/passwTxt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:ems="10"
-        android:hint="@string/pass_hint"
-        android:inputType="textPassword" />
-
-    <EditText
         android:id="@+id/loginTxt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -29,6 +19,17 @@
         android:layout_alignStart="@+id/passwTxt"
         android:layout_marginBottom="24dp"
         android:hint="@string/login_hint" />
+
+    <EditText
+        android:id="@+id/passwTxt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:ems="10"
+        android:hint="@string/pass_hint"
+        android:inputType="textPassword" />
+
 
     <Button
         android:layout_width="wrap_content"
