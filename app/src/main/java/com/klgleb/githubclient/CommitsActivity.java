@@ -6,13 +6,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -39,11 +41,12 @@ public class CommitsActivity extends AppCompatActivity {
     private ListView mListView;
     private LocalBroadcastManager mBoardcastManager;
     private BroadcastReceiver mReceiver;
-    private ProgressBar mProgressBar;
+    //private ProgressBar mProgressBar;
     private BroadcastReceiver mReceiverError;
     private String mRepoName;
     private String mRepoOwner;
     private BroadcastReceiver mReceiverTaskComplete;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,14 +60,20 @@ public class CommitsActivity extends AppCompatActivity {
         this.mRepoOwner = intent.getStringExtra("owner");
 
         mListView = (ListView) findViewById(R.id.listView);
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-
-        mProgressBar.setVisibility(View.INVISIBLE);
 
 
-        if (sTaskLoading) {
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
+
+        setSWipeRefreching(sTaskLoading);
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                updateList();
+            }
+        });
+
+
 
         mBoardcastManager = LocalBroadcastManager.getInstance(this);
 
@@ -75,7 +84,7 @@ public class CommitsActivity extends AppCompatActivity {
                 loadFromCache();
                 Log.d(TAG, "onReceive and loading from SQLite.");
 
-                mProgressBar.setVisibility(View.INVISIBLE);
+                setSWipeRefreching(false);
             }
         };
 
@@ -88,8 +97,7 @@ public class CommitsActivity extends AppCompatActivity {
             public void onReceive(Context context, Intent intent) {
                 loadFromCache();
                 Log.d(TAG, "Caching error");
-
-                mProgressBar.setVisibility(View.INVISIBLE);
+                setSWipeRefreching(false);
 
                 Toast.makeText(CommitsActivity.this, getString(R.string.caching_error), Toast.LENGTH_LONG).show();
             }
@@ -100,7 +108,7 @@ public class CommitsActivity extends AppCompatActivity {
         mReceiverTaskComplete = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mProgressBar.setVisibility(View.INVISIBLE);
+                setSWipeRefreching(false);
             }
         };
 
@@ -108,43 +116,9 @@ public class CommitsActivity extends AppCompatActivity {
         mBoardcastManager.registerReceiver(mReceiverTaskComplete,
                 new IntentFilter(GitHubCommitsAsyncTask.ACTION_TASK_COMPLETE));
 
-
-        //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
-
-
         loadFromCache();
 
-        /*
-        if (!GitHub.getInstance().isLogin()) {
-
-            SharedPreferences prefs = this.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
-
-            String userLogin = prefs.getString(LOGIN_KEY, "");
-            String userPass = prefs.getString(PASS_KEY, "");
-
-            assert userLogin != null;
-            assert userPass != null;
-
-            if (!userLogin.equals("") && !userPass.equals("")) {
-                GitHub.getInstance().init(userLogin, userPass);
-
-                loadFromCache();
-
-                this.updateList();
-
-            } else {
-                this.showLoginDialog();
-            }
-
-
-        } else if (mStartFlag) {
-            mStartFlag = false;
-            this.updateList();
-
-        } else if (mListView.getAdapter() == null) {
-            loadFromCache();
-        }*/
-
+        mFlag = true;
         Log.d(TAG, "onCreate");
 
     }
@@ -159,11 +133,18 @@ public class CommitsActivity extends AppCompatActivity {
     }
 
     private void loadFromCache() {
-        assert mProgressBar != null;
+
+        assert mListView != null;
 
 
         LoadFromCacheAsyncTask task = new LoadFromCacheAsyncTask(this);
-        task.execute();
+        if (Build.VERSION.SDK_INT >= 11) {
+            //--post GB use serial executor by default --
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            //--GB uses ThreadPoolExecutor by default--
+            task.execute();
+        }
     }
 
     private void showLoginDialog() {
@@ -180,7 +161,9 @@ public class CommitsActivity extends AppCompatActivity {
             return;
         }
 
-        mProgressBar.setVisibility(View.VISIBLE);
+
+        setSWipeRefreching(true);
+
         GitHubCommitsAsyncTask mTask = new GitHubCommitsAsyncTask(this, mRepoOwner, mRepoName);
         mTask.execute();
     }
@@ -189,6 +172,16 @@ public class CommitsActivity extends AppCompatActivity {
     public void onClick(View view) {
         updateList();
 
+    }
+
+    private void setSWipeRefreching(final boolean refreching) {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mSwipeRefreshLayout.setRefreshing(refreching);
+            }
+        }, 100);
     }
 
 

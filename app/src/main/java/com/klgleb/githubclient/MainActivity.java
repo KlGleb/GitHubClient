@@ -9,8 +9,11 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -18,7 +21,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -41,15 +43,16 @@ public class MainActivity extends AppCompatActivity {
     public static final String LOGIN_KEY = "login";
     public static final String PASS_KEY = "pass";
     public static final String PREFERENCES = "com.klgleb.githubclient";
-    private static boolean sTaskLoadint = false;
+    private static boolean sTaskLoading = false;
     //    private ProgressDialog mProgressDialog;
     //private static ReposAdapter mAdapter;
     private ListView mListView;
     private LocalBroadcastManager mBoardcastManager;
     private BroadcastReceiver mReceiver;
-    private ProgressBar mProgressBar;
+    //private ProgressBar mProgressBar;
     private BroadcastReceiver mReceiverError;
     private BroadcastReceiver mReceiverTaskComplete;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,15 +60,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mListView = (ListView) findViewById(R.id.listView);
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
 
-        mProgressBar.setVisibility(View.INVISIBLE);
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
 
-        if (sTaskLoadint) {
-            mProgressBar.setVisibility(View.VISIBLE);
-        }
+        setSWipeRefreching(sTaskLoading);
+
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                updateList();
+            }
+        });
+
+        //mSwipeRefreshLayout.setColorSchemeResources(Color.YELLOW, Color.BLUE, Color.GREEN);
 
         mBoardcastManager = LocalBroadcastManager.getInstance(this);
+
 
 
         mReceiver = new BroadcastReceiver() {
@@ -74,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFromCache();
                 Log.d(TAG, "onReceive and loading from SQLite.");
 
-                mProgressBar.setVisibility(View.INVISIBLE);
+                setSWipeRefreching(false);
             }
         };
 
@@ -88,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFromCache();
                 Log.d(TAG, "Caching error");
 
-                mProgressBar.setVisibility(View.INVISIBLE);
+                setSWipeRefreching(false);
 
                 Toast.makeText(MainActivity.this, getString(R.string.caching_error), Toast.LENGTH_LONG).show();
             }
@@ -101,7 +112,8 @@ public class MainActivity extends AppCompatActivity {
         mReceiverTaskComplete = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                mProgressBar.setVisibility(View.INVISIBLE);
+
+                setSWipeRefreching(false);
             }
         };
 
@@ -186,11 +198,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadFromCache() {
-        assert mProgressBar != null;
+        assert mListView != null;
 
 
         LoadFromCacheAsyncTask task = new LoadFromCacheAsyncTask(this);
-        task.execute();
+
+
+        if (Build.VERSION.SDK_INT >= 11) {
+            //--post GB use serial executor by default --
+            task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            //--GB uses ThreadPoolExecutor by default--
+            task.execute();
+        }
     }
 
     private void showLoginDialog() {
@@ -202,11 +222,25 @@ public class MainActivity extends AppCompatActivity {
 
         //mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
 
-        mProgressBar.setVisibility(View.VISIBLE);
+        if (mSwipeRefreshLayout != null) {
+            setSWipeRefreching(true);
+        }
+
+
         GitHubRepositoriesAsyncTask mTask = new GitHubRepositoriesAsyncTask(this);
         mTask.execute();
     }
 
+
+    private void setSWipeRefreching(final boolean refreching) {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mSwipeRefreshLayout.setRefreshing(refreching);
+            }
+        }, 100);
+    }
 
     public void onClick(View view) {
         updateList();
@@ -317,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected GitHubResponse doInBackground(Void... voids) {
-            sTaskLoadint = true;
+            sTaskLoading = true;
             //Надо получить текущего пользователя, если его у нас еще нет.
 
             if (GitHub.getInstance().getOwner() == null) {
@@ -398,7 +432,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(GitHubResponse response) {
             super.onPostExecute(response);
-            sTaskLoadint = false;
+            sTaskLoading = false;
 
             switch (response.getStatus()) {
                 case GitHubResponse.BAD_REQUEST:
