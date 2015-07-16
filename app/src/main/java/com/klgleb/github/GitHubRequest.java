@@ -55,9 +55,9 @@ public class GitHubRequest {
                 .addHeader("Accept", "application/vnd.github.v3+json")
                 .addHeader("Authorization", credential);
 
-        if (!fakey.equals("")) {
+        /*if (!fakey.equals("")) {
             builder2.addHeader("X-GitHub-OTP", fakey);
-        }
+        }*/
 
                         //.post(formBody)
         mRequest = builder2.build();

@@ -1,11 +1,16 @@
 package com.klgleb.githubclient;
 
+import android.content.Context;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.klgleb.github.model.GitHubRepo;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.util.ArrayList;
 
@@ -14,22 +19,65 @@ import java.util.ArrayList;
  * <p/>
  * Created by klgleb on 11.07.15.
  */
-public class ReposAdapter extends BaseAdapter {
+public class ReposAdapter extends RecyclerView.Adapter<ReposAdapter.ViewHolder> {
 
+    private final Context mContext;
     private final ArrayList<GitHubRepo> mRepos;
 
-    public ReposAdapter(ArrayList<GitHubRepo> repos) {
+    public ReposAdapter(Context context, ArrayList<GitHubRepo> repos) {
+        mContext = context;
         mRepos = repos;
     }
 
+
     @Override
-    public int getCount() {
-        return mRepos.size();
+    public ReposAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
+        LayoutInflater inflater = (LayoutInflater) mContext
+                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+        View view = inflater.inflate(R.layout.repositories_list_item, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public GitHubRepo getItem(int i) {
-        return mRepos.get(i);
+    public void onBindViewHolder(ReposAdapter.ViewHolder holder, int position) {
+        GitHubRepo repo = mRepos.get(position);
+
+
+        holder.userNameText.setText(repo.getOwner().getLogin());
+        holder.repoNameTxt.setText(repo.getName());
+        holder.descrTxt.setText(repo.getDescription());
+        holder.forksTxt.setText(String.valueOf(repo.getForksCount()));
+        holder.watchesTxt.setText(String.valueOf(repo.getWatchersCount()));
+
+        if (repo.getDescription().equals("")) {
+            holder.descrTxt.setVisibility(View.GONE);
+        } else {
+            holder.descrTxt.setVisibility(View.VISIBLE);
+        }
+
+
+        ImageView imageView = holder.imageView;
+
+        imageView.setImageResource(R.drawable.gitcat);
+
+        DisplayImageOptions options = new DisplayImageOptions.Builder()
+
+                .showStubImage(R.drawable.gitcat)
+                        // .showImageForEmptyUrl(R.drawable.image_for_empty_url)
+                .resetViewBeforeLoading()
+                .cacheInMemory()
+                .cacheOnDisc()
+                        //.decodingType(ImageScaleType.EXACT)
+                .build();
+
+
+        ImageLoader.getInstance().displayImage(repo.getOwner().getAvatarUrl(), imageView, options);
+    }
+
+    public GitHubRepo getItem(int position) {
+        return mRepos.get(position);
     }
 
     @Override
@@ -38,35 +86,31 @@ public class ReposAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int i, View convertView, ViewGroup viewGroup) {
-
-        View view = convertView;
-
-        if (view == null) {
-            //view = lInflater.inflate(R.layout.item, parent, false);
-            view = new TextView(viewGroup.getContext());
-        }
-
-
-        ((TextView) view).setText(getItem(i).getName());
-
-        /*Product p = getProduct(position);
-
-        // заполняем View в пункте списка данными из товаров: наименование, цена
-        // и картинка
-        ((TextView) view.findViewById(R.id.tvDescr)).setText(p.name);
-        ((TextView) view.findViewById(R.id.tvPrice)).setText(p.price + "");
-        ((ImageView) view.findViewById(R.id.ivImage)).setImageResource(p.image);
-
-        CheckBox cbBuy = (CheckBox) view.findViewById(R.id.cbBox);
-        // присваиваем чекбоксу обработчик
-        cbBuy.setOnCheckedChangeListener(myCheckChangList);
-        // пишем позицию
-        cbBuy.setTag(position);
-        // заполняем данными из товаров: в корзине или нет
-        cbBuy.setChecked(p.box);
-        return view;*/
-
-        return view;
+    public int getItemCount() {
+        return mRepos.size();
     }
+
+    class ViewHolder extends RecyclerView.ViewHolder {
+
+        private final TextView userNameText;
+        private final TextView repoNameTxt;
+        private final TextView descrTxt;
+        private final TextView forksTxt;
+        private final TextView watchesTxt;
+        private final ImageView imageView;
+
+        public ViewHolder(View holderView) {
+            super(holderView);
+
+            imageView = (ImageView) holderView.findViewById(R.id.imageView);
+
+            userNameText = ((TextView) holderView.findViewById(R.id.userNameText));
+            repoNameTxt = ((TextView) holderView.findViewById(R.id.repoNameTxt));
+            descrTxt = ((TextView) holderView.findViewById(R.id.descrTxt));
+            forksTxt = ((TextView) holderView.findViewById(R.id.forksTxt));
+            watchesTxt = ((TextView) holderView.findViewById(R.id.watchesTxt));
+
+        }
+    }
+
 }

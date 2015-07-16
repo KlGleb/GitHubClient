@@ -16,12 +16,12 @@ import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -31,6 +31,8 @@ import com.klgleb.github.model.GitHubOwner;
 import com.klgleb.github.model.GitHubRepo;
 import com.klgleb.github.model.GitHubRepos;
 import com.klgleb.github.model.GitHubSQLiteHelper;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -48,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private static boolean sTaskLoading = false;
     //    private ProgressDialog mProgressDialog;
     //private static ReposAdapter mAdapter;
-    private ListView mListView;
+    private RecyclerView mListView;
     private LocalBroadcastManager mBoardcastManager;
     private BroadcastReceiver mReceiver;
     //private ProgressBar mProgressBar;
@@ -56,13 +58,18 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mReceiverTaskComplete;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private String mText;
+    private LinearLayoutManager mLayoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mListView = (ListView) findViewById(R.id.listView);
+        ImageLoader imageLoader = ImageLoader.getInstance();
+        imageLoader.init(ImageLoaderConfiguration.createDefault(getApplicationContext()));
+
+
+        mListView = (RecyclerView) findViewById(R.id.listView);
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
 
@@ -126,33 +133,26 @@ public class MainActivity extends AppCompatActivity {
 
         //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
 
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mLayoutManager = new LinearLayoutManager(this);
+        mListView.setLayoutManager(mLayoutManager);
 
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+        mListView.addOnItemTouchListener(
+                new RecyclerItemClickListener(MainActivity.this, new RecyclerItemClickListener.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(View view, int position) {
 
-               /* if (GitHub.getInstance().getOwner() != null) {
+                        ReposAdapter adapter = (ReposAdapter) mListView.getAdapter();
+                        GitHubRepo repo = adapter.getItem(position);
 
-                    GitHubRepo repo = (GitHubRepo) mListView.getAdapter().getItem(position);
+                        Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
 
-                    Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
+                        intent.putExtra("repo", repo.getName());
+                        intent.putExtra("owner", repo.getOwner().getLogin());
 
-                    intent.putExtra("repo", repo.getName());
-                    intent.putExtra("owner", GitHub.getInstance().getOwner().getLogin());
-
-                    startActivity(intent);
-                }*/
-
-                GitHubRepo repo = (GitHubRepo) mListView.getAdapter().getItem(position);
-
-                Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
-
-                intent.putExtra("repo", repo.getName());
-                intent.putExtra("owner", repo.getOwner().getLogin());
-
-                startActivity(intent);
-            }
-        });
+                        startActivity(intent);
+                    }
+                })
+        );
 
 
         if (!GitHub.getInstance().isLogin()) {
@@ -335,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
                 .apply();
 
         GitHub.getInstance().logout();
-        mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
+        mListView.setAdapter(new ReposAdapter(this, new GitHubRepos()));
         showLoginDialog();
     }
 
@@ -606,7 +606,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d(TAG, "Repositories got from SQLite: count of this is " + result.size());
 
-                mListView.setAdapter(new ReposAdapter(result));
+                mListView.setAdapter(new ReposAdapter(MainActivity.this, result));
 
             }
         }
