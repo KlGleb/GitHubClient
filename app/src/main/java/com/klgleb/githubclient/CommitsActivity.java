@@ -1,5 +1,6 @@
 package com.klgleb.githubclient;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -74,7 +76,12 @@ public class CommitsActivity extends Activity {
             }
         });
 
+        ActionBar actionBar = getActionBar();
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP | ActionBar.DISPLAY_SHOW_TITLE
+                | ActionBar.DISPLAY_SHOW_HOME);
 
+        actionBar.setTitle(intent.getStringExtra("title"));
 
         mBoardcastManager = LocalBroadcastManager.getInstance(this);
 
@@ -119,10 +126,25 @@ public class CommitsActivity extends Activity {
 
         loadFromCache();
 
+
         mFlag = true;
         Log.d(TAG, "onCreate");
 
     }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                // app icon in action bar clicked; goto parent activity.
+                super.onBackPressed();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
 
     @Override
     protected void onDestroy() {
@@ -394,7 +416,7 @@ public class CommitsActivity extends Activity {
 
                 Log.d(TAG, "Commits are got from SQLite: count of this is " + result.size());
 
-                mListView.setAdapter(new CommitsAdapter(result));
+                mListView.setAdapter(new CommitsAdapter(CommitsActivity.this, result));
 
             } else {
                 if (mFlag) {

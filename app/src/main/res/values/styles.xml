@@ -2,7 +2,6 @@
 
     <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
         <item name="android:actionBarStyle">@style/AppTheme_ActionBar</item>
-        <!--<item name="android:homeAsUpIndicator">@drawable/gitcat</item>-->
         <item name="android:actionOverflowButtonStyle">@style/AppTheme_ActionBar_Overflow</item>
     </style>
 

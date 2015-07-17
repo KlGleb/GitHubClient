@@ -1,0 +1,62 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:orientation="horizontal">
+
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_toLeftOf="@+id/dateTxt"
+        android:layout_toStartOf="@+id/dateTxt"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/commitMessageTxt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Commit message"
+            android:textColor="@color/black_text"
+            android:textStyle="bold" />
+
+
+        <TextView
+            android:id="@+id/hashTxt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="hash"
+            android:textColor="@color/black_text" />
+
+        <TextView
+            android:id="@+id/userNameText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:text="Глеб Климов"
+            android:textColor="@color/gray_text" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/dateTxt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="center_vertical"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:text="16 июля"
+        android:textColor="@color/gray_text" />
+
+
+</RelativeLayout>

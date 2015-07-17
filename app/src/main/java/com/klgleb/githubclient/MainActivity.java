@@ -1,5 +1,6 @@
 package com.klgleb.githubclient;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -16,7 +17,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -59,7 +59,6 @@ public class MainActivity extends Activity {
     private BroadcastReceiver mReceiverError;
     private BroadcastReceiver mReceiverTaskComplete;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private LinearLayoutManager mLayoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +67,8 @@ public class MainActivity extends Activity {
 
         ImageLoader imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(getApplicationContext()));
-
+        getActionBar().setDisplayOptions(ActionBar.DISPLAY_SHOW_TITLE
+                | ActionBar.DISPLAY_SHOW_HOME);
 
         mRecyclerView = (ListView) findViewById(R.id.listView);
 /*
@@ -138,7 +138,7 @@ public class MainActivity extends Activity {
 
         //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
 
-        mLayoutManager = new LinearLayoutManager(this);
+        //mLayoutManager = new LinearLayoutManager(this);
        /* mRecyclerView.setLayoutManager(mLayoutManager);
 
         mRecyclerView.addOnItemTouchListener(
@@ -182,6 +182,7 @@ public class MainActivity extends Activity {
 
                 intent.putExtra("repo", repo.getName());
                 intent.putExtra("owner", repo.getOwner().getLogin());
+                intent.putExtra("title", repo.getName());
 
                 startActivity(intent);
             }
