@@ -1,5 +1,6 @@
 package com.klgleb.githubclient;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -15,13 +16,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -31,33 +33,33 @@ import com.klgleb.github.model.GitHubOwner;
 import com.klgleb.github.model.GitHubRepo;
 import com.klgleb.github.model.GitHubRepos;
 import com.klgleb.github.model.GitHubSQLiteHelper;
+import com.klgleb.githubclient.ui.DividerItemDecoration;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     public static final String TAG = "MyTag MainActivity";
     public static final String LOGIN_KEY = "login";
     public static final String PASS_KEY = "pass";
     public static final String TWO_FA_KEY = "twofa";
     public static final String PREFERENCES = "com.klgleb.githubclient";
+
     private static boolean sTaskLoading = false;
-    //    private ProgressDialog mProgressDialog;
-    //private static ReposAdapter mAdapter;
-    private RecyclerView mListView;
+
+    private RecyclerView mRecyclerView;
     private LocalBroadcastManager mBoardcastManager;
     private BroadcastReceiver mReceiver;
-    //private ProgressBar mProgressBar;
     private BroadcastReceiver mReceiverError;
     private BroadcastReceiver mReceiverTaskComplete;
     private SwipeRefreshLayout mSwipeRefreshLayout;
-    private String mText;
     private LinearLayoutManager mLayoutManager;
 
     @Override
@@ -69,9 +71,13 @@ public class MainActivity extends AppCompatActivity {
         imageLoader.init(ImageLoaderConfiguration.createDefault(getApplicationContext()));
 
 
-        mListView = (RecyclerView) findViewById(R.id.listView);
+        mRecyclerView = (RecyclerView) findViewById(R.id.listView);
+
+        mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
+        mRecyclerView.setItemAnimator(new DefaultItemAnimator());
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.orange, R.color.green, R.color.blue);
 
         setSWipeRefreching(sTaskLoading);
 
@@ -134,14 +140,14 @@ public class MainActivity extends AppCompatActivity {
         //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
 
         mLayoutManager = new LinearLayoutManager(this);
-        mListView.setLayoutManager(mLayoutManager);
+        mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mListView.addOnItemTouchListener(
+        mRecyclerView.addOnItemTouchListener(
                 new RecyclerItemClickListener(MainActivity.this, new RecyclerItemClickListener.OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
 
-                        ReposAdapter adapter = (ReposAdapter) mListView.getAdapter();
+                        ReposAdapter adapter = (ReposAdapter) mRecyclerView.getAdapter();
                         GitHubRepo repo = adapter.getItem(position);
 
                         Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
@@ -183,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else {
 
-            if (mListView.getAdapter() == null) {
+            if (mRecyclerView.getAdapter() == null) {
                 loadFromCache();
             }
 
@@ -204,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadFromCache() {
-        assert mListView != null;
+        assert mRecyclerView != null;
 
 
         LoadFromCacheAsyncTask task = new LoadFromCacheAsyncTask(this);
@@ -226,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateList() {
 
-        //mListView.setAdapter(new ReposAdapter(new GitHubRepos()));
+        //mRecyclerView.setAdapter(new ReposAdapter(new GitHubRepos()));
 
         if (mSwipeRefreshLayout != null) {
             setSWipeRefreching(true);
@@ -284,6 +290,25 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
+    public boolean onMenuOpened(int featureId, Menu menu) {
+        if (featureId == Window.FEATURE_ACTION_BAR && menu != null) {
+            if (menu.getClass().getSimpleName().equals("MenuBuilder")) {
+                try {
+                    Method m = menu.getClass().getDeclaredMethod(
+                            "setOptionalIconsVisible", Boolean.TYPE);
+                    m.setAccessible(true);
+                    m.invoke(menu, true);
+                } catch (NoSuchMethodException e) {
+                    Log.e(TAG, "onMenuOpened", e);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return super.onMenuOpened(featureId, menu);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -335,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
                 .apply();
 
         GitHub.getInstance().logout();
-        mListView.setAdapter(new ReposAdapter(this, new GitHubRepos()));
+        mRecyclerView.setAdapter(new ReposAdapter(this, new GitHubRepos()));
         showLoginDialog();
     }
 
@@ -443,7 +468,6 @@ public class MainActivity extends AppCompatActivity {
             }*/
 
 
-
             HashMap<String, String> params = new HashMap<>();
             params.put("type", "all");
             params.put("sort", "created");
@@ -506,7 +530,7 @@ public class MainActivity extends AppCompatActivity {
 
                     try {
                         final GitHubRepos repos = new GitHubRepos(jsonArr);
-                        //mListView.setAdapter(new ReposAdapter(repos));
+                        //mRecyclerView.setAdapter(new ReposAdapter(repos));
 
                         //caching data
                         AsyncTask<GitHubRepos, Void, Void> task = new AsyncTask<GitHubRepos, Void, Void>() {
@@ -602,11 +626,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(GitHubRepos result) {
-            if (result != null && result.size() > 0 && mListView != null) {
+            if (result != null && result.size() > 0 && mRecyclerView != null) {
 
                 Log.d(TAG, "Repositories got from SQLite: count of this is " + result.size());
 
-                mListView.setAdapter(new ReposAdapter(MainActivity.this, result));
+                mRecyclerView.setAdapter(new ReposAdapter(MainActivity.this, result));
 
             }
         }

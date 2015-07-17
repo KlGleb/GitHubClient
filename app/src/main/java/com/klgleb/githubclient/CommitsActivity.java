@@ -1,5 +1,6 @@
 package com.klgleb.githubclient;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +12,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ListView;
@@ -28,7 +28,7 @@ import org.json.JSONException;
 import java.util.HashMap;
 
 
-public class CommitsActivity extends AppCompatActivity {
+public class CommitsActivity extends Activity {
 
     public static final String TAG = "MyTag CommitsActivity";
     public static final String LOGIN_KEY = "login";
@@ -63,6 +63,7 @@ public class CommitsActivity extends AppCompatActivity {
 
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.orange, R.color.green, R.color.blue);
 
         setSWipeRefreching(sTaskLoading);
 

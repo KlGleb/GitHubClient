@@ -1,13 +1,13 @@
 package com.klgleb.githubclient;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends Activity {
 
     private EditText mPassTxt;
     private EditText mLoginText;
@@ -21,9 +21,10 @@ public class LoginActivity extends AppCompatActivity {
         mLoginText = (EditText) findViewById(R.id.loginTxt);
         mPassTxt = (EditText) findViewById(R.id.passwTxt);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
+        if (getActionBar() != null) {
+            getActionBar().hide();
         }
+
     }
 
 

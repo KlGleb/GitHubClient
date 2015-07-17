@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="black_text">#ff000000</color>
+
+    <color name="apptheme_primary">#009688</color>
+    <color name="apptheme_primary_dark">#00796b</color>
+    <color name="apptheme_accent">@android:color/white</color>
+
+    <color name="gray_text">#ff919191</color>
+
+
+    <color name="orange">#FF9900</color>
+    <color name="green">#009900</color>
+    <color name="blue">#000099</color>
+
 </resources>

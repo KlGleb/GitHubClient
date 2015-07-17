@@ -46,6 +46,7 @@ public class ReposAdapter extends RecyclerView.Adapter<ReposAdapter.ViewHolder> 
 
 
         holder.userNameText.setText(repo.getOwner().getLogin());
+
         holder.repoNameTxt.setText(repo.getName());
         holder.descrTxt.setText(repo.getDescription());
         holder.forksTxt.setText(String.valueOf(repo.getForksCount()));
@@ -64,7 +65,7 @@ public class ReposAdapter extends RecyclerView.Adapter<ReposAdapter.ViewHolder> 
 
         DisplayImageOptions options = new DisplayImageOptions.Builder()
 
-                .showStubImage(R.drawable.gitcat)
+                .showStubImage(R.drawable.gravatar_icon)
                         // .showImageForEmptyUrl(R.drawable.image_for_empty_url)
                 .resetViewBeforeLoading()
                 .cacheInMemory()
