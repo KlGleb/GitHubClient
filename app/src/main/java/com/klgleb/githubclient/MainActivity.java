@@ -16,14 +16,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.klgleb.github.GitHub;
@@ -33,7 +33,6 @@ import com.klgleb.github.model.GitHubOwner;
 import com.klgleb.github.model.GitHubRepo;
 import com.klgleb.github.model.GitHubRepos;
 import com.klgleb.github.model.GitHubSQLiteHelper;
-import com.klgleb.githubclient.ui.DividerItemDecoration;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
@@ -54,7 +53,7 @@ public class MainActivity extends Activity {
 
     private static boolean sTaskLoading = false;
 
-    private RecyclerView mRecyclerView;
+    private ListView mRecyclerView;
     private LocalBroadcastManager mBoardcastManager;
     private BroadcastReceiver mReceiver;
     private BroadcastReceiver mReceiverError;
@@ -71,10 +70,10 @@ public class MainActivity extends Activity {
         imageLoader.init(ImageLoaderConfiguration.createDefault(getApplicationContext()));
 
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.listView);
-
+        mRecyclerView = (ListView) findViewById(R.id.listView);
+/*
         mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL_LIST));
-        mRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        mRecyclerView.setItemAnimator(new DefaultItemAnimator());*/
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
         mSwipeRefreshLayout.setColorSchemeResources(R.color.orange, R.color.green, R.color.blue);
@@ -140,7 +139,7 @@ public class MainActivity extends Activity {
         //IntentFilter mFilter = new IntentFilter(ACTION_BACK_PRESSED);
 
         mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
+       /* mRecyclerView.setLayoutManager(mLayoutManager);
 
         mRecyclerView.addOnItemTouchListener(
                 new RecyclerItemClickListener(MainActivity.this, new RecyclerItemClickListener.OnItemClickListener() {
@@ -158,7 +157,35 @@ public class MainActivity extends Activity {
                         startActivity(intent);
                     }
                 })
-        );
+        );*/
+
+        mRecyclerView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+
+               /* if (GitHub.getInstance().getOwner() != null) {
+
+                    GitHubRepo repo = (GitHubRepo) mListView.getAdapter().getItem(position);
+
+                    Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
+
+                    intent.putExtra("repo", repo.getName());
+                    intent.putExtra("owner", GitHub.getInstance().getOwner().getLogin());
+
+                    startActivity(intent);
+                }*/
+
+                GitHubRepo repo = (GitHubRepo) mRecyclerView.getAdapter().getItem(position);
+
+                Intent intent = new Intent(MainActivity.this, CommitsActivity.class);
+
+                intent.putExtra("repo", repo.getName());
+                intent.putExtra("owner", repo.getOwner().getLogin());
+
+                startActivity(intent);
+            }
+        });
 
 
         if (!GitHub.getInstance().isLogin()) {
@@ -360,7 +387,7 @@ public class MainActivity extends Activity {
                 .apply();
 
         GitHub.getInstance().logout();
-        mRecyclerView.setAdapter(new ReposAdapter(this, new GitHubRepos()));
+        mRecyclerView.setAdapter(new ReposListViewAdapter(this, new GitHubRepos()));
         showLoginDialog();
     }
 
@@ -630,7 +657,7 @@ public class MainActivity extends Activity {
 
                 Log.d(TAG, "Repositories got from SQLite: count of this is " + result.size());
 
-                mRecyclerView.setAdapter(new ReposAdapter(MainActivity.this, result));
+                mRecyclerView.setAdapter(new ReposListViewAdapter(MainActivity.this, result));
 
             }
         }
